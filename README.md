@@ -1,5 +1,7 @@
 # Claude Plugin M365 Gateway
 
+> **This is what I use and what worked for me.** I run this gateway on my own VPS with Tailscale routing to local models. Your setup may differ — YMMV. Contributions welcome if you get it working on something I haven't tested.
+
 Self-hosted **LiteLLM + Caddy** gateway that lets you use the Claude for Microsoft 365 add-ins (Word, Excel, PowerPoint, Outlook) with **any OpenAI-compatible LLM provider** — not just Anthropic's API.
 
 Instead of routing through Anthropic's servers or paying for a Claude plan, this gateway runs on your own infrastructure. The Office add-in talks to your gateway, and your gateway talks to whatever backend you want (local models, OpenRouter, vLLM, etc.).
