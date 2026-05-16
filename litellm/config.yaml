@@ -1,28 +1,44 @@
 model_list:
   # ─────────────────────────────────────────────────────────
   # Map model IDs the Office add-in requests → your backend.
+  #
   # The add-in discovers models via GET /v1/models then
   # sends Anthropic-format requests to POST /v1/messages.
   # LiteLLM translates them to the target provider format.
+  #
+  # Required model IDs (the add-in looks for these):
+  #   claude-opus-4-7-20250820    — best for complex work
+  #   claude-opus-4-6-20250820    — strong all-purpose
+  #   claude-sonnet-4-6-20250820  — lightweight, fast
+  #
+  # See: https://support.claude.com/en/articles/13945233
   # ─────────────────────────────────────────────────────────
 
-  # ── Route Claude Sonnet to your OpenAI-compatible backend ──
-  - model_name: claude-sonnet-4-7-20250820
-    litellm_params:
-      model: openai/YOUR_MODEL_ID_HERE    # e.g. deepseek-v4-flash, gpt-4o, etc.
-      api_base: ${OPENER_BASE_URL}
-      api_key: ${OPENER_API_KEY}
-      rpm: 60                             # rate limit (requests per minute)
-
-  # ── Route Claude Opus to a different model on the same backend ──
+  # ── Opus 4.7 → your most capable model ──
   - model_name: claude-opus-4-7-20250820
     litellm_params:
-      model: openai/YOUR_SECOND_MODEL_ID
+      model: openai/YOUR_BEST_MODEL_ID      # e.g. deepseek-v4-flash, gpt-4o, claude-sonnet-4-5
       api_base: ${OPENER_BASE_URL}
       api_key: ${OPENER_API_KEY}
-      rpm: 30
+      rpm: 30                               # rate limit (requests per minute)
 
-  # ── Route Claude Haiku via native Anthropic passthrough ──
+  # ── Opus 4.6 → your second-best model ──
+  - model_name: claude-opus-4-6-20250820
+    litellm_params:
+      model: openai/YOUR_SECOND_MODEL_ID    # e.g. kimi-k2.6, gpt-4o-mini
+      api_base: ${OPENER_BASE_URL}
+      api_key: ${OPENER_API_KEY}
+      rpm: 60
+
+  # ── Sonnet 4.6 → your fastest/cheapest model ──
+  - model_name: claude-sonnet-4-6-20250820
+    litellm_params:
+      model: openai/YOUR_FAST_MODEL_ID      # e.g. claude-haiku-3-5, llama-3-8b
+      api_base: ${OPENER_BASE_URL}
+      api_key: ${OPENER_API_KEY}
+      rpm: 120
+
+  # ── Example: native Anthropic passthrough (uncomment to use) ──
   # - model_name: claude-haiku-4-7-20250820
   #   litellm_params:
   #     model: anthropic/claude-haiku-4-7-20250820

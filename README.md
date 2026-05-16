@@ -71,7 +71,7 @@ curl https://yourdomain.com/v1/messages \
   -H "x-api-key: $LITELLM_MASTER_KEY" \
   -H "anthropic-version: 2024-01-01" \
   -d '{
-    "model": "claude-sonnet-4-7-20250820",
+    "model": "claude-opus-4-7-20250820",
     "max_tokens": 100,
     "messages": [{"role": "user", "content": "Say hello"}]
   }'
@@ -93,15 +93,38 @@ For detailed admin deployment (Azure admin consent, tenant-wide rollout, Outlook
 
 ---
 
+## Model ID Reference
+
+The Claude add-in for Microsoft 365 requests models by specific Claude model IDs. You must map **these exact IDs** in `litellm/config.yaml` to whatever backend models you want to use.
+
+The add-in discovers available models via `GET /v1/models` and presents them to the user. You need to define at least one — more gives users choice:
+
+| Add-in Model ID | Typical Purpose |
+|-----------------|----------------|
+| `claude-opus-4-7-20250820` | Best for complex document analysis and editing |
+| `claude-opus-4-6-20250820` | Strong all-purpose, slightly faster |
+| `claude-sonnet-4-6-20250820` | Lightweight, fastest responses |
+
+For the latest list of supported model IDs and connection details, see [Anthropic's official documentation](https://support.claude.com/en/articles/13945233-use-claude-for-microsoft-365-with-third-party-platforms).
+
+Each of these can point to **any** provider — you decide which backend model handles "Opus" requests vs "Sonnet" requests.
+
 ## How to Configure Models
 
-The `litellm/config.yaml` maps **Claude model IDs** (what the add-in requests) to **your provider's models**. The add-in discovers models via `GET /v1/models` and uses the `model_name` field from your config.
+The `litellm/config.yaml` maps those **Claude model IDs** to **your provider's models**:
 
 ```yaml
-# Map the model ID the add-in asks for to your backend model
-- model_name: claude-sonnet-4-7-20250820     # what add-in requests
+# Map "Opus 4.7" → your best model
+- model_name: claude-opus-4-7-20250820
   litellm_params:
-    model: openai/deepseek-v4-flash           # your actual model
+    model: openai/deepseek-v4-flash
+    api_base: ${OPENER_BASE_URL}
+    api_key: ${OPENER_API_KEY}
+
+# Map "Sonnet 4.6" → your cheaper/faster model
+- model_name: claude-sonnet-4-6-20250820
+  litellm_params:
+    model: openai/kimi-k2.6
     api_base: ${OPENER_BASE_URL}
     api_key: ${OPENER_API_KEY}
 ```
