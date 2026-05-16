@@ -1,0 +1,36 @@
+model_list:
+  # ─────────────────────────────────────────────────────────
+  # Map model IDs the Office add-in requests → your backend.
+  # The add-in discovers models via GET /v1/models then
+  # sends Anthropic-format requests to POST /v1/messages.
+  # LiteLLM translates them to the target provider format.
+  # ─────────────────────────────────────────────────────────
+
+  # ── Route Claude Sonnet to your OpenAI-compatible backend ──
+  - model_name: claude-sonnet-4-7-20250820
+    litellm_params:
+      model: openai/YOUR_MODEL_ID_HERE    # e.g. deepseek-v4-flash, gpt-4o, etc.
+      api_base: ${OPENER_BASE_URL}
+      api_key: ${OPENER_API_KEY}
+      rpm: 60                             # rate limit (requests per minute)
+
+  # ── Route Claude Opus to a different model on the same backend ──
+  - model_name: claude-opus-4-7-20250820
+    litellm_params:
+      model: openai/YOUR_SECOND_MODEL_ID
+      api_base: ${OPENER_BASE_URL}
+      api_key: ${OPENER_API_KEY}
+      rpm: 30
+
+  # ── Route Claude Haiku via native Anthropic passthrough ──
+  # - model_name: claude-haiku-4-7-20250820
+  #   litellm_params:
+  #     model: anthropic/claude-haiku-4-7-20250820
+  #     api_key: ${ANTHROPIC_API_KEY}
+
+litellm_settings:
+  drop_params: true          # silently ignore unsupported params
+  set_verbose: true          # log all requests/responses for debugging
+
+general_settings:
+  master_key: ${LITELLM_MASTER_KEY}

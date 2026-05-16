@@ -1,0 +1,48 @@
+# ──────────────────────────────────────────────────────
+# Caddyfile — LiteLLM reverse proxy with CORS
+# ──────────────────────────────────────────────────────
+# Replace YOUR_DOMAIN with your actual domain.
+# Caddy auto-provisions Let's Encrypt TLS.
+#
+# The CORS headers are REQUIRED by the Claude Office add-in
+# (taskpane loads from https://pivot.claude.ai).
+
+YOUR_DOMAIN {
+
+    # ── LiteLLM API proxy ──
+    handle_path /v1/* {
+        reverse_proxy litellm:4000 {
+            header_up Host {host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # ── CORS headers for all responses ──
+    header {
+        Access-Control-Allow-Origin "https://pivot.claude.ai"
+        Access-Control-Allow-Methods "GET, POST, OPTIONS"
+        Access-Control-Allow-Headers "Content-Type, Authorization, x-api-key, anthropic-version"
+        Access-Control-Max-Age "86400"
+    }
+
+    # ── Handle CORS preflight (OPTIONS) ──
+    @options {
+        method OPTIONS
+    }
+    respond @options 204 {
+        header Access-Control-Allow-Origin "https://pivot.claude.ai"
+        header Access-Control-Allow-Methods "GET, POST, OPTIONS"
+        header Access-Control-Allow-Headers "Content-Type, Authorization, x-api-key, anthropic-version"
+        header Access-Control-Max-Age "86400"
+    }
+
+    # ── Health check ──
+    handle /health {
+        respond "OK" 200
+    }
+
+    log {
+        output file /data/access.log
+    }
+}
