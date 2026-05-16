@@ -109,6 +109,63 @@ For the latest list of supported model IDs and connection details, see [Anthropi
 
 Each of these can point to **any** provider — you decide which backend model handles "Opus" requests vs "Sonnet" requests.
 
+---
+
+## Using LM Studio as Your Backend
+
+[LM Studio](https://lmstudio.ai) runs local models on your machine with an OpenAI-compatible API. Here's how to connect it to this gateway.
+
+### Option A: LM Studio on the same machine as the gateway (simplest)
+
+If you're running Docker on your local machine (not a VPS), LM Studio and the gateway share the same host:
+
+1. In LM Studio, go to **Developer** tab and enable the local API server (default: `localhost:1234`)
+2. Set `.env` to point to LM Studio:
+   ```env
+   OPENER_BASE_URL=http://host.docker.internal:1234/v1
+   OPENER_API_KEY=not-needed
+   ```
+3. Run `docker compose up -d`
+4. Open the Office add-in and point it at your gateway
+
+For macOS Docker Desktop, `host.docker.internal` automatically resolves to your Mac. On Linux, use `--network=host` or `172.17.0.1` instead.
+
+### Option B: LM Studio on your local machine, gateway on a VPS
+
+When the gateway lives on a VPS but LM Studio runs on your laptop/desktop, you need a secure tunnel:
+
+**Using Tailscale (recommended):**
+1. Install Tailscale on both your local machine and VPS
+2. In LM Studio, bind to `0.0.0.0` (Settings → Local API Server → Bind to `0.0.0.0`)
+3. Set `.env` on your VPS:
+   ```env
+   OPENER_BASE_URL=http://100.x.x.x:1234/v1
+   OPENER_API_KEY=not-needed
+   ```
+   Use your local machine's Tailscale IP.
+
+**Using SSH tunnel:**
+```bash
+# On your local machine, forward LM Studio through SSH to the VPS
+ssh -R 1234:localhost:1234 user@your-vps
+```
+
+Then set `.env` on the VPS to `OPENER_BASE_URL=http://localhost:1234/v1`.
+
+**Using ngrok or bore:**
+```bash
+# Expose LM Studio publicly (no auth — be careful)
+ngrok http 1234
+```
+Set `OPENER_BASE_URL` to the generated ngrok URL. Your gateway will route through it.
+
+### LM Studio config tips
+
+- **Model selection**: Pick a model that handles complex instructions well. Models like DeepSeek V4 Flash, Qwen 3.6 Plus, or any 70B+ class works great.
+- **Context length**: Set to at least 32K in LM Studio — the Office add-in can send large document contents.
+- **Keep alive**: Enable "Keep model loaded in memory" so the model is always ready.
+- **GPU offloading**: Max out GPU offload in LM Studio for best performance.
+
 ## How to Configure Models
 
 The `litellm/config.yaml` maps those **Claude model IDs** to **your provider's models**:
