@@ -1,9 +1,11 @@
 services:
   litellm:
-    image: ghcr.io/berriai/litellm:main-latest
+    image: ghcr.io/berriai/litellm:main-stable   # pin a specific release tag once it works
     restart: unless-stopped
-    ports:
-      - "4000:4000"
+    # No public port: only Caddy (same Docker network) reaches LiteLLM.
+    # For local debugging use 127.0.0.1:4000:4000, never 4000:4000.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # Linux hosts; harmless on macOS
     env_file:
       - .env
     volumes:
@@ -13,7 +15,6 @@ services:
       - "/app/config.yaml"
       - "--port"
       - "4000"
-      - "--detailed_logging"
 
   caddy:
     image: caddy:2-alpine

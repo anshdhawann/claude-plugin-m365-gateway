@@ -51,7 +51,7 @@ OPENER_API_KEY=sk-your-api-key
 
 Edit `Caddyfile` and replace `YOUR_DOMAIN` with your actual domain.
 
-Edit `litellm/config.yaml` and replace `YOUR_MODEL_ID_HERE` with the model name your provider uses (e.g. `gpt-4o`, `deepseek-v4-flash`, `claude-sonnet-4-5-20250929`).
+Edit `litellm/config.yaml` and replace `YOUR_BEST_MODEL_ID` / `YOUR_SECOND_MODEL_ID` / `YOUR_FAST_MODEL_ID` with the model name your provider uses (e.g. `gpt-4o`, `deepseek-v4-flash`, `claude-sonnet-4-5-20250929`).
 
 ### 3. Deploy
 
@@ -65,7 +65,7 @@ Caddy auto-provisions a Let's Encrypt TLS certificate. Your gateway is now live 
 
 ```bash
 # Check model list
-curl https://yourdomain.com/v1/models
+curl https://yourdomain.com/v1/models -H "x-api-key: $LITELLM_MASTER_KEY"
 
 # Quick test
 curl https://yourdomain.com/v1/messages \
@@ -73,7 +73,7 @@ curl https://yourdomain.com/v1/messages \
   -H "x-api-key: $LITELLM_MASTER_KEY" \
   -H "anthropic-version: 2024-01-01" \
   -d '{
-    "model": "claude-opus-4-7-20250820",
+    "model": "claude-opus-4-7",
     "max_tokens": 100,
     "messages": [{"role": "user", "content": "Say hello"}]
   }'
@@ -85,7 +85,7 @@ curl https://yourdomain.com/v1/messages \
 
 1. Open **Word, Excel, PowerPoint, or Outlook**
 2. Go to **Home → Add-ins** and launch the Claude add-in (install from Microsoft AppSource if you haven't)
-3. On the sign-in screen, select **"Enterprise gateway"**
+3. On the sign-in screen, select **"Cloud provider or gateway"**, then **Gateway**
 4. Enter:
    - **Gateway URL**: `https://yourdomain.com`
    - **API token**: Your `LITELLM_MASTER_KEY` (or a user-specific token if you configure LiteLLM virtual keys)
@@ -97,15 +97,15 @@ For detailed admin deployment (Azure admin consent, tenant-wide rollout, Outlook
 
 ## Model ID Reference
 
-The Claude add-in for Microsoft 365 requests models by specific Claude model IDs. You must map **these exact IDs** in `litellm/config.yaml` to whatever backend models you want to use.
+The Claude add-in for Microsoft 365 requests models by specific Claude model IDs. Anthropic's docs use these IDs; the add-in lists whatever `GET /v1/models` returns, so map in `litellm/config.yaml` to whatever backend models you want to use.
 
 The add-in discovers available models via `GET /v1/models` and presents them to the user. You need to define at least one — more gives users choice:
 
 | Add-in Model ID | Typical Purpose |
 |-----------------|----------------|
-| `claude-opus-4-7-20250820` | Best for complex document analysis and editing |
-| `claude-opus-4-6-20250820` | Strong all-purpose, slightly faster |
-| `claude-sonnet-4-6-20250820` | Lightweight, fastest responses |
+| `claude-opus-4-7` | Best for complex document analysis and editing |
+| `claude-opus-4-6` | Strong all-purpose, slightly faster |
+| `claude-sonnet-4-6` | Lightweight, fastest responses |
 
 For the latest list of supported model IDs and connection details, see [Anthropic's official documentation](https://support.claude.com/en/articles/13945233-use-claude-for-microsoft-365-with-third-party-platforms).
 
@@ -154,13 +154,6 @@ ssh -R 1234:localhost:1234 user@your-vps
 
 Then set `.env` on the VPS to `OPENER_BASE_URL=http://localhost:1234/v1`.
 
-**Using ngrok or bore:**
-```bash
-# Expose LM Studio publicly (no auth — be careful)
-ngrok http 1234
-```
-Set `OPENER_BASE_URL` to the generated ngrok URL. Your gateway will route through it.
-
 ### LM Studio config tips
 
 - **Model selection**: Pick a model that handles complex instructions well. Models like DeepSeek V4 Flash, Qwen 3.6 Plus, or any 70B+ class works great.
@@ -174,14 +167,14 @@ The `litellm/config.yaml` maps those **Claude model IDs** to **your provider's m
 
 ```yaml
 # Map "Opus 4.7" → your best model
-- model_name: claude-opus-4-7-20250820
+- model_name: claude-opus-4-7
   litellm_params:
     model: openai/deepseek-v4-flash
     api_base: ${OPENER_BASE_URL}
     api_key: ${OPENER_API_KEY}
 
 # Map "Sonnet 4.6" → your cheaper/faster model
-- model_name: claude-sonnet-4-6-20250820
+- model_name: claude-sonnet-4-6
   litellm_params:
     model: openai/kimi-k2.6
     api_base: ${OPENER_BASE_URL}
@@ -208,7 +201,7 @@ LiteLLM supports [dozens of providers](https://docs.litellm.ai/docs/providers) �
 - **Rate limiting**: Adjust `rpm` per model in `config.yaml` to avoid provider throttling
 - **Custom headers**: Add `extra_headers` in `litellm_params` for provider-specific auth
 - **User-specific tokens**: Use LiteLLM's [virtual key system](https://docs.litellm.ai/docs/proxy/virtual_keys) to issue per-user API tokens instead of sharing your master key
-- **Monitoring**: LiteLLM logs all requests at `--detailed_logging`; check with `docker compose logs litellm`
+- **Monitoring**: `docker compose logs litellm`. Avoid `--detailed_logging` / debug logging in production: it writes full document contents to logs
 - **Updates**: `docker compose pull && docker compose up -d` to update both Caddy and LiteLLM
 
 ---
