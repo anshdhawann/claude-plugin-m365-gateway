@@ -1,48 +1,39 @@
 # ──────────────────────────────────────────────────────
-# Caddyfile — LiteLLM reverse proxy with CORS
+# Caddyfile: LiteLLM reverse proxy with CORS
 # ──────────────────────────────────────────────────────
 # Replace YOUR_DOMAIN with your actual domain.
 # Caddy auto-provisions Let's Encrypt TLS.
 #
-# The CORS headers are REQUIRED by the Claude Office add-in
-# (taskpane loads from https://pivot.claude.ai).
+# The add-in taskpane loads from https://pivot.claude.ai, so every
+# response (including errors and preflights) needs CORS headers.
+# `defer` makes Caddy's values REPLACE LiteLLM's own CORS headers,
+# otherwise the browser sees two Access-Control-Allow-Origin values
+# and rejects the response.
 
 YOUR_DOMAIN {
-
-    # ── LiteLLM API proxy ──
-    handle_path /v1/* {
-        reverse_proxy litellm:4000 {
-            header_up Host {host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
-        }
-    }
-
-    # ── CORS headers for all responses ──
     header {
         Access-Control-Allow-Origin "https://pivot.claude.ai"
         Access-Control-Allow-Methods "GET, POST, OPTIONS"
-        Access-Control-Allow-Headers "Content-Type, Authorization, x-api-key, anthropic-version"
+        Access-Control-Allow-Headers "Content-Type, Authorization, x-api-key, anthropic-version, anthropic-beta"
         Access-Control-Max-Age "86400"
+        Vary "Origin"
+        defer
     }
 
-    # ── Handle CORS preflight (OPTIONS) ──
-    @options {
-        method OPTIONS
-    }
-    respond @options 204 {
-        header Access-Control-Allow-Origin "https://pivot.claude.ai"
-        header Access-Control-Allow-Methods "GET, POST, OPTIONS"
-        header Access-Control-Allow-Headers "Content-Type, Authorization, x-api-key, anthropic-version"
-        header Access-Control-Max-Age "86400"
+    # CORS preflight: answer here, never forward to LiteLLM
+    @preflight method OPTIONS
+    handle @preflight {
+        respond 204
     }
 
-    # ── Health check ──
     handle /health {
         respond "OK" 200
     }
 
-    log {
-        output file /data/access.log
+    # Everything else goes to LiteLLM UNCHANGED (path keeps /v1).
+    # Do not use handle_path here: it strips /v1, and LiteLLM only
+    # serves the Anthropic endpoint at /v1/messages.
+    handle {
+        reverse_proxy litellm:4000
     }
 }
